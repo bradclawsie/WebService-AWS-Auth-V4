@@ -27,17 +27,43 @@ unit module WebService::AWS::V4:auth<bradclawsie>:ver<0.0.1>;
 use URI;
 use URI::Escape;
 
-my sub canonicalize_uri(URI:D $uri) returns Str:D {
+class X::WebService::AWS::V4::ParseError is Exception is export {
+    has $.input;
+    has $.err;
+    method message() { "With $.input, parse error: $.err" }
+}
+
+sub awsv4_canonicalize_uri(URI:D $uri) returns Str:D is export {
     my Str $path = $uri.path;
-    return '/' if $path.chars == 0;
+    return '/' if $path.chars == 0 || $path eq '/';
     return uri_escape($path);
 }
 
-multi awsv4_canonicalize_uri(Str:D $uri_str) returns Str:D is export {
-    return canonicalize_uri(URI.new($uri_str));
+sub awsv4_canonicalize_query(URI:D $uri) returns Str:D is export {
+    my Str $query = $uri.query;
+    return '' if $query.chars == 0;
+    my Str @pairs = $query.split('&');
+    my Str @escaped_pairs = ();
+    for @pairs -> $pair {
+        if $pair ~~ /^(\S+)\=(\S*)$/ {
+            my ($k,$v) = ($0,$1);
+            push(@escaped_pairs,uri_escape($k) ~ '=' ~ uri_escape($v));
+        } else {
+            X::WebService::AWS::V4::ParseError.new(input => $pair,err => "cannot parse query key=value").throw;
+        }            
+    }
+    return @escaped_pairs.sort().join('&');
 }
 
-multi awsv4_canonicalize_uri(URI:D $uri) returns Str:D is export {
-    return canonicalize_uri($uri);
+sub awsv4_canonicalize_headers(Str:D @headers) returns Map:D is export {
+    my %header_map = ();
+    for @headers -> $header {
+        if $header ~~ /^(\S+)\:(\S+)$/ {
+            my ($k,$v) = ($0,$1);
+            %header_map{$k.lc} = $v;
+        } else {
+            X::WebService::AWS::V4::ParseError.new(input => $header,err => "cannot parse header").throw;
+        }
+    }
+    return %header_map;
 }
-
