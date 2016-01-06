@@ -27,6 +27,8 @@ unit module WebService::AWS::V4:auth<bradclawsie>:ver<0.0.1>;
 use URI;
 use URI::Escape;
 
+# perhaps right way to do this is to just have a constructor that takes a URI, headers, and body
+
 class X::WebService::AWS::V4::ParseError is Exception is export {
     has $.input;
     has $.err;
@@ -49,7 +51,7 @@ sub awsv4_canonicalize_query(URI:D $uri) returns Str:D is export {
             my ($k,$v) = ($0,$1);
             push(@escaped_pairs,uri_escape($k) ~ '=' ~ uri_escape($v));
         } else {
-            X::WebService::AWS::V4::ParseError.new(input => $pair,err => "cannot parse query key=value").throw;
+            X::WebService::AWS::V4::ParseError.new(input => $pair,err => 'cannot parse query key=value').throw;
         }            
     }
     return @escaped_pairs.sort().join('&');
@@ -58,12 +60,27 @@ sub awsv4_canonicalize_query(URI:D $uri) returns Str:D is export {
 sub awsv4_canonicalize_headers(Str:D @headers) returns Map:D is export {
     my %header_map = ();
     for @headers -> $header {
-        if $header ~~ /^(\S+)\:(\S+)$/ {
+        if $header ~~ /^([^\:]+)\:(.*)$/ {
             my ($k,$v) = ($0,$1);
-            %header_map{$k.lc} = $v;
+            $v = $v.trim;
+            if $v !~~ /\"/ {
+                $v ~~ s:g/\s+/ /;
+            }            
+            %header_map{$k.lc.trim} = $v;
         } else {
-            X::WebService::AWS::V4::ParseError.new(input => $header,err => "cannot parse header").throw;
+            X::WebService::AWS::V4::ParseError.new(input => $header,err => 'cannot parse header').throw;
         }
     }
+    if !%header_map{'host'}:exits {
+        X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => 'host header is required').throw;
+    }
     return %header_map;
+}
+
+sub map_headers_string(Str:D %h) returns Str:D is export {
+    return %h.keys.sort.map( -> $k { $k ~ ':' ~ %h{$k}} ).join("\n") ~ "\n";
+}
+
+sub map_signed_headers(Str:D %h) returns Str:D is export {
+    return %h.keys.sort.join(';');
 }
