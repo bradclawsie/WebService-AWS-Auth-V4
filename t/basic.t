@@ -34,3 +34,7 @@ my Str @headers = "Host:iam.amazonaws.com",
 my $canonical_headers = "content-type:application/x-www-form-urlencoded; charset=utf-8\nhost:iam.amazonaws.com\nmy-header1:a b c\nmy-header2:\"a     b   c\"\nx-amz-date:20150830T123600Z\n";
 
 is awsv4_canonicalize_headers(map_headers(@headers)), $canonical_headers, 'match example canonical headers';
+
+my $signed_headers = "content-type;host;my-header1;my-header2;x-amz-date\n";
+
+is awsv4_signed_headers(map_headers(@headers)), $signed_headers, 'match example signed headers'
