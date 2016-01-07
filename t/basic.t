@@ -19,4 +19,18 @@ is awsv4_canonicalize_query(URI.new('http://example.com/path?Action=ListUsers&Ve
 
 dies-ok {
     awsv4_canonicalize_query(URI.new('http://example.com/path?ab&c=d'));
-}, 'caught exception on malformed key-value query pair'
+}, 'caught exception on malformed key-value query pair';
+
+dies-ok {
+    my %h = map_headers(("foo:bar"));
+}, 'caught excpetion on missing host header';
+
+my Str @headers = "Host:iam.amazonaws.com",
+   "Content-Type:application/x-www-form-urlencoded; charset=utf-8",
+   "My-header1:    a   b   c ",
+   "X-Amz-Date:20150830T123600Z",
+   "My-Header2:    \"a     b   c\"";
+
+my $canonical_headers = "content-type:application/x-www-form-urlencoded; charset=utf-8\nhost:iam.amazonaws.com\nmy-header1:a b c\nmy-header2:\"a     b   c\"\nx-amz-date:20150830T123600Z\n";
+
+is awsv4_canonicalize_headers(map_headers(@headers)), $canonical_headers, 'match example canonical headers';

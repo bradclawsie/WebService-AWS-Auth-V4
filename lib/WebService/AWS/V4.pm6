@@ -24,6 +24,7 @@ https://b7j0c.org/stuff/license.txt
 
 unit module WebService::AWS::V4:auth<bradclawsie>:ver<0.0.1>;
 
+use Digest::SHA;
 use URI;
 use URI::Escape;
 
@@ -57,30 +58,35 @@ sub awsv4_canonicalize_query(URI:D $uri) returns Str:D is export {
     return @escaped_pairs.sort().join('&');
 }
 
-sub awsv4_canonicalize_headers(Str:D @headers) returns Map:D is export {
+sub map_headers(Str:D @headers) returns Hash:D is export {
     my %header_map = ();
     for @headers -> $header {
-        if $header ~~ /^([^\:]+)\:(.*)$/ {
+        if $header ~~ /^(\S+)\:(.*)$/ {
             my ($k,$v) = ($0,$1);
             $v = $v.trim;
             if $v !~~ /\"/ {
                 $v ~~ s:g/\s+/ /;
-            }            
+            } 
             %header_map{$k.lc.trim} = $v;
         } else {
             X::WebService::AWS::V4::ParseError.new(input => $header,err => 'cannot parse header').throw;
         }
     }
-    if !%header_map{'host'}:exits {
-        X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => 'host header is required').throw;
+    unless %header_map{'host'}:exists {
+        X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => 'host header required').throw;
     }
     return %header_map;
 }
 
-sub map_headers_string(Str:D %h) returns Str:D is export {
+sub awsv4_canonicalize_headers(%h) returns Str:D is export {
     return %h.keys.sort.map( -> $k { $k ~ ':' ~ %h{$k}} ).join("\n") ~ "\n";
 }
 
-sub map_signed_headers(Str:D %h) returns Str:D is export {
+sub awsv4_signed_headers(%h) returns Str:D is export {
     return %h.keys.sort.join(';');
+}
+
+sub sha256_base16(Str:D $s) returns Str:D {
+    my $sha256 = sha256 $s.encode: 'ascii';
+    return [~] $sha256.list».fmt: "%02x";
 }

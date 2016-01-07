@@ -8,7 +8,8 @@
         "WebService::AWS::V4" : "lib/WebService/AWS/V4.pm6"
     },
     "depends" : [
-              "URI"
+              "URI",
+              "Digest"
     ],
     "source-url" : "git://github.com/bradclawsie/WebService-AWS-V4.git"
 }
