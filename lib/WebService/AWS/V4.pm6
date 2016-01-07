@@ -52,7 +52,6 @@ class WebService::AWS::V4 is export {
     has Str $.uri is required;
     has URI $!uri_obj;
     has Str %!header_map;
-
     
     submethod BUILD(Str:D :$method,Str:D :@headers,Str:D :$body, Str:D :$uri) {
 
