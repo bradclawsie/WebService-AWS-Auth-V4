@@ -3,38 +3,67 @@ use Test;
 use URI;
 use WebService::AWS::V4;
 
-is awsv4_canonicalize_uri(URI.new('')), '/', 'canonicalizes path from empty URI';
-is awsv4_canonicalize_uri(URI.new('http://example.com')), '/', 'canonicalizes empty URI path';
-is awsv4_canonicalize_uri(URI.new('http://example.com/')), '/', 'canonicalizes / URI path';
-is awsv4_canonicalize_uri(URI.new('http://example.com/home/documents+and+settings')), '%2Fhome%2Fdocuments%2Band%2Bsettings', 'canonicalize nonempty URI str';
-
-is awsv4_canonicalize_query(URI.new('')), '', 'canonicalize query from empty URI';
-is awsv4_canonicalize_query(URI.new('http://example.com')), '', 'canonicalize query from empty URI query';
-is awsv4_canonicalize_query(URI.new('http://example.com/')), '', 'canonicalize query from empty URI query';
-is awsv4_canonicalize_query(URI.new('http://example.com/path?')), '', 'canonicalize query from empty URI query';
-is awsv4_canonicalize_query(URI.new('http://example.com/path?a=b')), 'a=b', 'canonicalize query from URI';
-is awsv4_canonicalize_query(URI.new('http://example.com/path?a=b&C=d')), 'C=d&a=b', 'canonicalize query from URI with sort';
-is awsv4_canonicalize_query(URI.new('http://example.com/path?a/z=b&C=d')), 'C=d&a%2Fz=b', 'canonicalize query from URI with sort and escape';
-is awsv4_canonicalize_query(URI.new('http://example.com/path?Action=ListUsers&Version=2010-05-08')), 'Action=ListUsers&Version=2010-05-08', 'canonicalize query from URI';
-
-dies-ok {
-    awsv4_canonicalize_query(URI.new('http://example.com/path?ab&c=d'));
-}, 'caught exception on malformed key-value query pair';
-
-dies-ok {
-    my %h = map_headers(("foo:bar"));
-}, 'caught excpetion on missing host header';
-
 my Str @headers = "Host:iam.amazonaws.com",
    "Content-Type:application/x-www-form-urlencoded; charset=utf-8",
    "My-header1:    a   b   c ",
    "X-Amz-Date:20150830T123600Z",
    "My-Header2:    \"a     b   c\"";
 
-my $canonical_headers = "content-type:application/x-www-form-urlencoded; charset=utf-8\nhost:iam.amazonaws.com\nmy-header1:a b c\nmy-header2:\"a     b   c\"\nx-amz-date:20150830T123600Z\n";
+my Str @missing_host_header = @headers[1 .. @headers.end];
 
-is awsv4_canonicalize_headers(map_headers(@headers)), $canonical_headers, 'match example canonical headers';
+my Str @malformed_headers = ( "Host iam.amazonaws.com" );
 
-my $signed_headers = "content-type;host;my-header1;my-header2;x-amz-date\n";
+my $canonical_headers = "content-type:application/x-www-form-urlencoded; charset=utf-8\nhost:iam.amazonaws.com\nmy-header1:a b c\nmy-header2:\"a     b   c\"\nx-amz-date:20150830T123600Z";
 
-is awsv4_signed_headers(map_headers(@headers)), $signed_headers, 'match example signed headers'
+my $signed_headers = "content-type;host;my-header1;my-header2;x-amz-date";
+
+lives-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/', headers => @headers);
+}, 'correctly initialize well-formed obj';
+
+dies-ok {
+    my $v4 = WebService::AWS::V4.new(method => '', body => '', uri => 'https://iam.amazonaws.com/', headers => @headers);
+}, 'caught exception when trying to initialize with missing method';
+
+dies-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'PUT', body => '', uri => 'https://iam.amazonaws.com/', headers => @headers);
+}, 'caught exception when trying to initialize with bad method';
+
+dies-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => '', headers => @headers);
+}, 'caught exception when trying to initialize with missing uri';
+
+dies-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'htt', headers => @headers);
+}, 'caught exception when trying to initialize with malformed uri';
+
+dies-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @missing_host_header);
+}, 'caught exception on missing host header';
+
+dies-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @malformed_headers);
+}, 'caught exception on malformed headers';
+
+lives-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/', headers => @headers);
+    is $v4.canonical_uri(), '/', 'canonicalizes empty URI path';
+    is $v4.canonical_query(), '', 'canonicalizes empty query';
+}, 'correctly canonicalized empty';
+
+lives-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @headers);
+    is $v4.canonical_uri(), '%2Fhome%2Fdocuments%2Band%2Bsettings', 'canonicalizes nonempty URI path';
+    is $v4.canonical_query(), 'C=d&a%2Fz=b', 'canonicalizes nonempty query';
+}, 'correctly canonicalized nonempty query';
+
+dies-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?ab&C=d', headers => @headers);
+    my $q = $v4.canonicalize_query();
+}, 'caught exception on malformed key-value query pair';
+
+lives-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @headers);
+    is $v4.canonical_headers(), $canonical_headers, 'match canonical headers';
+    is $v4.signed_headers(), $signed_headers, 'match signed headers';
+}, 'correctly canonicalized headers';

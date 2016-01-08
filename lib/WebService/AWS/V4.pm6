@@ -44,7 +44,7 @@ class X::WebService::AWS::V4::MethodError is Exception is export {
 # These are the methods that can be used with AWS services.
 our $Methods = set < GET POST HEAD >; 
 
-class WebService::AWS::V4 is export {
+class WebService::AWS::V4 {
 
     has Str $.method is required;
     has Str @.headers is required;
@@ -60,6 +60,8 @@ class WebService::AWS::V4 is export {
         }
         $!method := $method;
 
+        @!headers = @headers;
+        
         # Map the lowercased and trimmed header names to trimmed header values. Will throw
         # an exception if there is an error, let caller catch it.
         %!header_map = &map_headers(@headers);
@@ -79,7 +81,7 @@ class WebService::AWS::V4 is export {
             if $header ~~ /^(\S+)\:(.*)$/ {
                 my ($k,$v) = ($0,$1);
                 $v = $v.trim;
-                if $v !~~ / '"' / {                    
+                if $v !~~ / '"' / {
                     $v ~~ s:g/\s+/ /;
                 } 
                 %header_map{$k.lc.trim} = $v;
@@ -93,59 +95,55 @@ class WebService::AWS::V4 is export {
         return %header_map;
     }
 
-}
-
-sub awsv4_canonicalize_uri(URI:D $uri) returns Str:D is export {
-    my Str $path = $uri.path;
-    return '/' if $path.chars == 0 || $path eq '/';
-    return uri_escape($path);
-}
-
-sub awsv4_canonicalize_query(URI:D $uri) returns Str:D is export {
-    my Str $query = $uri.query;
-    return '' if $query.chars == 0;
-    my Str @pairs = $query.split('&');
-    my Str @escaped_pairs = ();
-    for @pairs -> $pair {
-        if $pair ~~ /^(\S+)\=(\S*)$/ {
-            my ($k,$v) = ($0,$1);
-            push(@escaped_pairs,uri_escape($k) ~ '=' ~ uri_escape($v));
-        } else {
-            X::WebService::AWS::V4::ParseError.new(input => $pair,err => 'cannot parse query key=value').throw;
-        }            
+    # STEP 1 CANONICAL REQUEST
+    
+    method canonical_uri() returns Str:D {
+        my Str $path = $!uri.path;
+        return '/' if $path.chars == 0 || $path eq '/';
+        return uri_escape($path);
     }
-    return @escaped_pairs.sort().join('&');
-}
 
-sub map_headers(Str:D @headers) returns Hash:D is export {
-    my %header_map = ();
-    for @headers -> $header {
-        if $header ~~ /^(\S+)\:(.*)$/ {
-            my ($k,$v) = ($0,$1);
-            $v = $v.trim;
-            if $v !~~ /\"/ {
-                $v ~~ s:g/\s+/ /;
-            } 
-            %header_map{$k.lc.trim} = $v;
-        } else {
-            X::WebService::AWS::V4::ParseError.new(input => $header,err => 'cannot parse header').throw;
+    method canonical_query() returns Str:D {
+        my Str $query = $!uri.query;
+        return '' if $query.chars == 0;
+        my Str @pairs = $query.split('&');
+        my Str @escaped_pairs = ();
+        for @pairs -> $pair {
+            if $pair ~~ /^(\S+)\=(\S*)$/ {
+                my ($k,$v) = ($0,$1);
+                push(@escaped_pairs,uri_escape($k) ~ '=' ~ uri_escape($v));
+            } else {
+                X::WebService::AWS::V4::ParseError.new(input => $pair,err => 'cannot parse query key=value').throw;
+            }            
         }
+        return @escaped_pairs.sort().join('&');
     }
-    unless %header_map{'host'}:exists {
-        X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => 'host header required').throw;
+
+    method canonical_headers() returns Str:D {
+        my %h := %!header_map;
+        return %h.keys.sort.map( -> $k { $k ~ ':' ~ %h{$k}} ).join("\n");
     }
-    return %header_map;
+    
+    method signed_headers() returns Str:D {
+        my %h := %!header_map;
+        return %h.keys.sort.join(';');
+    }
+    
+    our sub sha256_base16(Str:D $s) returns Str:D {
+        my $sha256 = sha256 $s.encode: 'ascii';
+        return [~] $sha256.list».fmt: "%02x";
+    }
+
+    method canonical_request() is export {
+        [~]
+        $!method,
+        self.canonical_uri(),
+        self.canonical_query(),
+        self.canonical_headers(),
+        self.signed_headers(),
+        &sha256_base16($!body);        
+    }
+
+    # 
 }
 
-sub awsv4_canonicalize_headers(%h) returns Str:D is export {
-    return %h.keys.sort.map( -> $k { $k ~ ':' ~ %h{$k}} ).join("\n") ~ "\n";
-}
-
-sub awsv4_signed_headers(%h) returns Str:D is export {
-    return %h.keys.sort.join(';') ~ "\n";
-}
-
-sub sha256_base16(Str:D $s) returns Str:D {
-    my $sha256 = sha256 $s.encode: 'ascii';
-    return [~] $sha256.list».fmt: "%02x";
-}
