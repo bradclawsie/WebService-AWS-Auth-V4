@@ -49,8 +49,7 @@ class WebService::AWS::V4 is export {
     has Str $.method is required;
     has Str @.headers is required;
     has Str $.body is required;
-    has Str $.uri is required;
-    has URI $!uri_obj;
+    has URI $!uri;
     has Str %!header_map;
     
     submethod BUILD(Str:D :$method,Str:D :@headers,Str:D :$body, Str:D :$uri) {
@@ -68,6 +67,10 @@ class WebService::AWS::V4 is export {
         $!body := $body;
 
         # Now create a URI obj from the URI string and make sure that the method and host are set.
+        $!uri = URI.new(:$uri);
+        unless $!uri.scheme ne '' && $!uri.host ne '' {
+            X::WebService::AWS::V4::ParseError.new(input => :$uri,err => 'cannot parse uri').throw;
+        }
     }
 
     my sub map_headers(Str:D @headers) returns Hash:D {
@@ -76,7 +79,7 @@ class WebService::AWS::V4 is export {
             if $header ~~ /^(\S+)\:(.*)$/ {
                 my ($k,$v) = ($0,$1);
                 $v = $v.trim;
-                if $v !~~ /\"/ {
+                if $v !~~ / '"' / {                    
                     $v ~~ s:g/\s+/ /;
                 } 
                 %header_map{$k.lc.trim} = $v;
