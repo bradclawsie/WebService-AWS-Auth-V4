@@ -114,36 +114,35 @@ class WebService::AWS::V4 {
                 push(@escaped_pairs,uri_escape($k) ~ '=' ~ uri_escape($v));
             } else {
                 X::WebService::AWS::V4::ParseError.new(input => $pair,err => 'cannot parse query key=value').throw;
-            }            
+            }
         }
         return @escaped_pairs.sort().join('&');
     }
 
     method canonical_headers() returns Str:D {
         my %h := %!header_map;
-        return %h.keys.sort.map( -> $k { $k ~ ':' ~ %h{$k}} ).join("\n");
+        %h.keys.sort.map( -> $k { $k ~ ':' ~ %h{$k}} ).join("\n") ~ "\n";
     }
     
     method signed_headers() returns Str:D {
         my %h := %!header_map;
-        return %h.keys.sort.join(';');
+        %h.keys.sort.join(';');
     }
     
     our sub sha256_base16(Str:D $s) returns Str:D {
         my $sha256 = sha256 $s.encode: 'ascii';
-        return [~] $sha256.list».fmt: "%02x";
+        [~] $sha256.list».fmt: "%02x";
     }
 
     method canonical_request() is export {
-        [~]
-        $!method,
-        self.canonical_uri(),
-        self.canonical_query(),
-        self.canonical_headers(),
-        self.signed_headers(),
-        &sha256_base16($!body);        
+        ($!method,
+         self.canonical_uri(),
+         self.canonical_query(),
+         self.canonical_headers(),
+         self.signed_headers(),
+         &sha256_base16($!body)).join("\n");
     }
-
+    
     # 
 }
 
