@@ -68,12 +68,14 @@ lives-ok {
     is $v4.signed_headers(), $signed_headers, 'match signed headers';
 }, 'correctly canonicalized headers';
 
-lives-ok {
-    my Str @headers = "Host:iam.amazonaws.com",
+my Str @aws_sample_headers = "Host:iam.amazonaws.com",
    "Content-Type:application/x-www-form-urlencoded; charset=utf-8",
    "X-Amz-Date:20150830T123600Z";
 
-    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08', headers => @headers);
+my $aws_sample_uri = 'https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08';
+
+lives-ok {
+    my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => $aws_sample_uri, headers => @aws_sample_headers);
 
     my $cr = $v4.canonical_request();
     my $cr_sha256 = WebService::AWS::V4::sha256_base16($cr);

@@ -42,7 +42,9 @@ class X::WebService::AWS::V4::MethodError is Exception is export {
 }
 
 # These are the methods that can be used with AWS services.
-our $Methods = set < GET POST HEAD >; 
+our constant $Methods = set < GET POST HEAD >; 
+
+our constant $HMAC_name = 'AWS4-HMAC-SHA256';
 
 class WebService::AWS::V4 {
 
@@ -95,6 +97,23 @@ class WebService::AWS::V4 {
         return %header_map;
     }
 
+    # Get the SHA256 for a given string.
+    our sub sha256_base16(Str:D $s) returns Str:D is export {
+        my $sha256 = sha256 $s.encode: 'ascii';
+        [~] $sha256.list».fmt: "%02x";
+    }
+
+    # Use this as a 'formatter' method for a DateTime object to get the X-Amz-Date format.
+    our sub amz_date_formatter(DateTime:D $dt) returns Str:D is export {
+        sprintf "%04d%02d%02dT%02d%02d%02dZ",
+        $dt.utc.year,
+        $dt.utc.month,
+        $dt.utc.day,
+        $dt.utc.hour,
+        $dt.utc.minute,
+        $dt.utc.second;        
+    }
+
     # STEP 1 CANONICAL REQUEST
     
     method canonical_uri() returns Str:D {
@@ -129,11 +148,6 @@ class WebService::AWS::V4 {
         %h.keys.sort.join(';');
     }
     
-    our sub sha256_base16(Str:D $s) returns Str:D {
-        my $sha256 = sha256 $s.encode: 'ascii';
-        [~] $sha256.list».fmt: "%02x";
-    }
-
     method canonical_request() is export {
         ($!method,
          self.canonical_uri(),
@@ -143,6 +157,10 @@ class WebService::AWS::V4 {
          &sha256_base16($!body)).join("\n");
     }
     
-    # 
+    # STEP 2 STRING TO SIGN
+
+    method string_to_sign() is export {
+        
+    }
 }
 
