@@ -44,7 +44,12 @@ class X::WebService::AWS::V4::MethodError is Exception is export {
 # These are the methods that can be used with AWS services.
 our constant $Methods = set < GET POST HEAD >; 
 
-our constant $HMAC_name = 'AWS4-HMAC-SHA256';
+# HMAC algorithm.
+our constant $HMAC_name      = 'AWS4-HMAC-SHA256';
+# Host header normalized key.
+our constant $Host_key       = 'host';
+# X-Amz-Date header normalized key.
+our constant $X_Amz_Date_key = 'x-amz-date';
 
 class WebService::AWS::V4 {
 
@@ -53,6 +58,7 @@ class WebService::AWS::V4 {
     has Str $.body is required;
     has URI $!uri;
     has Str %!header_map;
+    has DateTime $!amz_date;
     
     submethod BUILD(Str:D :$method,Str:D :@headers,Str:D :$body, Str:D :$uri) {
 
@@ -66,7 +72,7 @@ class WebService::AWS::V4 {
         
         # Map the lowercased and trimmed header names to trimmed header values. Will throw
         # an exception if there is an error, let caller catch it.
-        %!header_map = &map_headers(@headers);
+        %!header_map = map_headers(@headers);
 
         $!body := $body;
 
@@ -75,6 +81,11 @@ class WebService::AWS::V4 {
         unless $!uri.scheme ne '' && $!uri.host ne '' {
             X::WebService::AWS::V4::ParseError.new(input => :$uri,err => 'cannot parse uri').throw;
         }
+
+        # If the $X_Amz_Date_key is not found, map_headers would have thrown an exception.
+        # parse_amz_date will also throw an exception of the header value cannot be parsed,
+        # let caller catch it.
+        $!amz_date = parse_amz_date(%!header_map{$X_Amz_Date_key});
     }
 
     # Transform the Str array of headers into a hash where lc keys are mapped to normalized vals.
@@ -92,8 +103,10 @@ class WebService::AWS::V4 {
                 X::WebService::AWS::V4::ParseError.new(input => $header,err => 'cannot parse header').throw;
             }
         }
-        unless %header_map{'host'}:exists {
-            X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => 'host header required').throw;
+        for $Host_key, $X_Amz_Date_key -> $k {
+            unless %header_map{$k}:exists {
+                X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => $k ~ ' header required').throw;
+            }
         }
         return %header_map;
     }
@@ -112,7 +125,21 @@ class WebService::AWS::V4 {
         $dt.utc.day,
         $dt.utc.hour,
         $dt.utc.minute,
-        $dt.utc.second;        
+        $dt.utc.second; 
+    }
+
+    our sub parse_amz_date(Str:D $s) returns DateTime:D is export {
+        if $s ~~ / ^(\d ** 4)(\d ** 2)(\d ** 2)T(\d ** 2)(\d ** 2)(\d ** 2)Z$ / {
+            return DateTime.new(year=>$0,
+                                month=>$1,
+                                day=>$2,
+                                hour=>$3,
+                                minute=>$4,
+                                second=>$5,
+                                formatter=>&amz_date_formatter);
+        } else {
+            X::WebService::AWS::V4::ParseError.new(input => $s,err => 'cannot parse X-Amz-Date').throw;
+        }
     }
 
     # STEP 1 CANONICAL REQUEST
@@ -149,7 +176,7 @@ class WebService::AWS::V4 {
         %h.keys.sort.join(';');
     }
     
-    method canonical_request() is export {
+    method canonical_request() returns Str:D is export {
         ($!method,
          self.canonical_uri(),
          self.canonical_query(),
@@ -160,8 +187,8 @@ class WebService::AWS::V4 {
     
     # STEP 2 STRING TO SIGN
 
-    method string_to_sign() is export {
-        
+    method string_to_sign() returns Str:D is export {
+        '';
     }
 }
 

@@ -18,9 +18,12 @@ my $canonical_headers = "content-type:application/x-www-form-urlencoded; charset
 my $signed_headers = "content-type;host;my-header1;my-header2;x-amz-date";
 
 lives-ok {
-    # 20150830T123600Z
-    my $dt = DateTime.new(year=>2015,month=>8,day=>30,hour=>12,minute=>36,second=>0,timezone=>0,formatter=>&WebService::AWS::V4::amz_date_formatter);
-    is $dt.Str, '20150830T123600Z', 'match aws date example';
+    my $example_date_str = '20150830T123600Z';
+    my $dt_s = DateTime.new(year=>2015,month=>8,day=>30,hour=>12,minute=>36,second=>0,timezone=>0,formatter=>&WebService::AWS::V4::amz_date_formatter);
+    is $dt_s.Str, $example_date_str, 'match aws date example';
+    my $dt_o = WebService::AWS::V4::parse_amz_date($dt_s.Str);
+    is ($dt_s == $dt_o), True, 'date objects round trip';
+    is ($dt_s.Str eq $dt_o.Str), True, 'date strings round trip';
 }, 'date formatting';
 
 lives-ok {
