@@ -77,6 +77,7 @@ class WebService::AWS::V4 {
         }
     }
 
+    # Transform the Str array of headers into a hash where lc keys are mapped to normalized vals.
     my sub map_headers(Str:D @headers) returns Hash:D {
         my %header_map = ();
         for @headers -> $header {

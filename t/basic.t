@@ -18,6 +18,12 @@ my $canonical_headers = "content-type:application/x-www-form-urlencoded; charset
 my $signed_headers = "content-type;host;my-header1;my-header2;x-amz-date";
 
 lives-ok {
+    # 20150830T123600Z
+    my $dt = DateTime.new(year=>2015,month=>8,day=>30,hour=>12,minute=>36,second=>0,timezone=>0,formatter=>&WebService::AWS::V4::amz_date_formatter);
+    is $dt.Str, '20150830T123600Z', 'match aws date example';
+}, 'date formatting';
+
+lives-ok {
     my $v4 = WebService::AWS::V4.new(method => 'GET', body => '', uri => 'https://iam.amazonaws.com/', headers => @headers);
 }, 'correctly initialize well-formed obj';
 
