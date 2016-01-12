@@ -224,14 +224,6 @@ class WebService::AWS::V4 {
 
     # STEP 3 CALCULATE THE AWS SIGNATURE
 
-    method signing_key() returns Blob:D is export {
-        my $kdate = hmac($Auth_version ~ $!secret,amz_date_yyyymmdd($!amz_date),&sha256);
-        my $kregion = hmac($kdate,$!region,&sha256);
-        my $kservice = hmac($kregion,$!service,&sha256);
-        my $ksigning = hmac($kservice,$Termination_str,&sha256);
-        return $ksigning;
-    }
-
     method signature() returns Str:D is export {
         my $kdate = hmac($Auth_version ~ $!secret,amz_date_yyyymmdd($!amz_date),&sha256);
         my $kregion = hmac($kdate,$!region,&sha256);
