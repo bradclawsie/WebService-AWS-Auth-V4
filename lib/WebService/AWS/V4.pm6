@@ -68,11 +68,12 @@ class WebService::AWS::V4 {
     has Str $.region is required;
     has Str $.service is required;
     has Str $.secret is required;
+    has Str $.access_key is required;
     has URI $!uri;
     has Str %!header_map;
     has DateTime $!amz_date;
     
-    submethod BUILD(Str:D :$method, :$body, :$uri, :$region, :$service, :$secret, :@headers){ 
+    submethod BUILD(Str:D :$method, :$body, :$uri, :$region, :$service, :$secret, :$access_key, :@headers){ 
 
         # Make sure the method passed is allowed
         unless $method (elem) $Methods {
@@ -83,6 +84,7 @@ class WebService::AWS::V4 {
         @!headers := @headers;
         $!body := $body;
         $!secret := $secret;
+        $!access_key := $access_key;
         $!region = $region.lc;
         $!service = $service.lc;
         

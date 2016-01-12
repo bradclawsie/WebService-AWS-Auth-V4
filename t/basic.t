@@ -20,6 +20,7 @@ my $signed_headers = "content-type;host;my-header1;my-header2;x-amz-date";
 my constant $service = 'iam';
 my constant $region = 'us-east-1';
 my constant $secret = 'wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY';
+my constant $access_key = 'AKIDEXAMPLE';
 my constant $uri_str = 'https://iam.amazonaws.com/';
 my constant $get = 'GET';
 my constant $aws_sample_uri = 'https://iam.amazonaws.com/?Action=ListUsers&Version=2010-05-08';
@@ -37,58 +38,58 @@ lives-ok {
 }, 'date formatting';
 
 lives-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 }, 'correctly initialize well-formed obj';
 
 dies-ok {
-    my $v4 = WebService::AWS::V4.new(method => '', body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => '', body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 }, 'caught exception when trying to initialize with missing method';
 
 dies-ok {
-    my $v4 = WebService::AWS::V4.new(method => 'PUT', body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => 'PUT', body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 }, 'caught exception when trying to initialize with bad method';
 
 dies-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => '', headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => '', headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 }, 'caught exception when trying to initialize with missing uri';
 
 dies-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'htt', headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'htt', headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 }, 'caught exception when trying to initialize with malformed uri';
 
 dies-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @missing_host_header, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @missing_host_header, region => $region, service => $service, secret => $secret, access_key => $access_key);
 }, 'caught exception on missing host header';
 
 dies-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @malformed_headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @malformed_headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 }, 'caught exception on malformed headers';
 
 lives-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $uri_str, headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
     is $v4.canonical_uri(), '/', 'canonicalizes empty URI path';
     is $v4.canonical_query(), '', 'canonicalizes empty query';
 }, 'correctly canonicalized empty';
 
 lives-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
     is $v4.canonical_uri(), '%2Fhome%2Fdocuments%2Band%2Bsettings', 'canonicalizes nonempty URI path';
     is $v4.canonical_query(), 'C=d&a%2Fz=b', 'canonicalizes nonempty query';
 }, 'correctly canonicalized nonempty query';
 
 dies-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?ab&C=d', headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?ab&C=d', headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
     my $q = $v4.canonicalize_query();
 }, 'caught exception on malformed key-value query pair';
 
 lives-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => 'https://iam.amazonaws.com/home/documents+and+settings?a/z=b&C=d', headers => @headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
     is $v4.canonical_headers(), $canonical_headers, 'match canonical headers';
     is $v4.signed_headers(), $signed_headers, 'match signed headers';
 }, 'correctly canonicalized headers';
 
 lives-ok {
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $aws_sample_uri, headers => @aws_sample_headers, region => $region, service => $service, secret => $secret);
+    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $aws_sample_uri, headers => @aws_sample_headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 
     my $cr = $v4.canonical_request();
     my $cr_sha256 = WebService::AWS::V4::sha256_base16($cr);
