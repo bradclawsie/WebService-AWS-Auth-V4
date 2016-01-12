@@ -9,7 +9,8 @@
     },
     "depends" : [
               "URI",
-              "Digest"
+              "Digest::SHA",
+              "Digest::HMAC"
     ],
     "source-url" : "git://github.com/bradclawsie/WebService-AWS-V4.git"
 }

@@ -47,6 +47,9 @@ our constant $Methods = set < GET POST HEAD >;
 # HMAC algorithm.
 our constant $HMAC_name      = 'AWS4-HMAC-SHA256';
 
+# Signing version.
+our constant $Auth_version   = 'AWS4';
+
 # Host header normalized key.
 our constant $Host_key       = 'host';
 
