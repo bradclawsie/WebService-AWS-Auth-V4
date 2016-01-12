@@ -122,7 +122,7 @@ class WebService::AWS::V4 {
                 X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => $k ~ ' header required').throw;
             }
         }
-        return %header_map;
+        %header_map;
     }
 
     # Get the SHA256 for a given string.
@@ -163,13 +163,13 @@ class WebService::AWS::V4 {
 
     # STEP 1 CANONICAL REQUEST
     
-    method canonical_uri() returns Str:D {
+    method canonical_uri() returns Str:D is export {
         my Str $path = $!uri.path;
         return '/' if $path.chars == 0 || $path eq '/';
-        return uri_escape($path);
+        uri_escape($path);
     }
 
-    method canonical_query() returns Str:D {
+    method canonical_query() returns Str:D is export {
         my Str $query = $!uri.query;
         return '' if $query.chars == 0;
         my Str @pairs = $query.split('&');
@@ -182,17 +182,15 @@ class WebService::AWS::V4 {
                 X::WebService::AWS::V4::ParseError.new(input => $pair,err => 'cannot parse query key=value').throw;
             }
         }
-        return @escaped_pairs.sort().join('&');
+        @escaped_pairs.sort().join('&');
     }
 
-    method canonical_headers() returns Str:D {
-        my %h := %!header_map;
-        %h.keys.sort.map( -> $k { $k ~ ':' ~ %h{$k}} ).join("\n") ~ "\n";
+    method canonical_headers() returns Str:D is export {
+        %!header_map.keys.sort.map( -> $k { $k ~ ':' ~ %!header_map{$k}} ).join("\n") ~ "\n";
     }
     
-    method signed_headers() returns Str:D {
-        my %h := %!header_map;
-        %h.keys.sort.join(';');
+    method signed_headers() returns Str:D is export {
+        %!header_map.keys.sort.join(';');
     }
     
     method canonical_request() returns Str:D is export {
@@ -206,27 +204,21 @@ class WebService::AWS::V4 {
     
     # STEP 2 STRING TO SIGN
 
-    method credential_scope() returns Str:D is export {
-        (amz_date_yyyymmdd($!amz_date),
-         $!region,
-         $!service,
-         $Termination_str).join('/');
-    }
-    
     method string_to_sign() returns Str:D is export {
-        my $cr = self.canonical_request();
-        my $cr_sha256 = sha256_base16($cr);
         ($HMAC_name,
          $!amz_date.Str,
-         self.credential_scope(),
-         $cr_sha256).join("\n");
+         (amz_date_yyyymmdd($!amz_date),
+         $!region,
+         $!service,
+         $Termination_str).join('/'),
+         sha256_base16(self.canonical_request())).join("\n");
     }
 
     # STEP 3 CALCULATE THE AWS SIGNATURE
 
     method signature() returns Str:D is export {
-        my $kdate = hmac($Auth_version ~ $!secret,amz_date_yyyymmdd($!amz_date),&sha256);
-        my $kregion = hmac($kdate,$!region,&sha256);
+        my $kdate    = hmac($Auth_version ~ $!secret,amz_date_yyyymmdd($!amz_date),&sha256);
+        my $kregion  = hmac($kdate,$!region,&sha256);
         my $kservice = hmac($kregion,$!service,&sha256);
         my $ksigning = hmac($kservice,$Termination_str,&sha256);
         hmac-hex($ksigning,self.string_to_sign(),&sha256);

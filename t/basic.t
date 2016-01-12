@@ -94,8 +94,6 @@ lives-ok {
     my $cr_sha256 = WebService::AWS::V4::sha256_base16($cr);
     is WebService::AWS::V4::sha256_base16($cr), 'f536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59', 'match aws test signature for canonical request';
 
-    is $v4.credential_scope, '20150830/us-east-1/iam/aws4_request', 'credential scope';
-
     is $v4.string_to_sign, "AWS4-HMAC-SHA256\n20150830T123600Z\n20150830/us-east-1/iam/aws4_request\nf536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59", 'string to sign';
 
     is $v4.signature, '5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7', 'signature';
