@@ -46,21 +46,28 @@ our constant $Methods = set < GET POST HEAD >;
 
 # HMAC algorithm.
 our constant $HMAC_name      = 'AWS4-HMAC-SHA256';
+
 # Host header normalized key.
 our constant $Host_key       = 'host';
+
 # X-Amz-Date header normalized key.
 our constant $X_Amz_Date_key = 'x-amz-date';
+
+# Termination string required in credential scope.
+our constant $Termination_str = 'aws4_request';
 
 class WebService::AWS::V4 {
 
     has Str $.method is required;
     has Str @.headers is required;
     has Str $.body is required;
+    has Str $.region is required;
+    has Str $.service is required;
     has URI $!uri;
     has Str %!header_map;
     has DateTime $!amz_date;
     
-    submethod BUILD(Str:D :$method,Str:D :@headers,Str:D :$body, Str:D :$uri) {
+    submethod BUILD(Str:D :$method,Str:D :@headers,Str:D :$body, Str:D :$uri, Str:D :$region, Str:D :$service) {
 
         # Make sure the method passed is allowed
         unless $method (elem) $Methods {
@@ -68,13 +75,14 @@ class WebService::AWS::V4 {
         }
         $!method := $method;
 
-        @!headers = @headers;
+        @!headers := @headers;
+        $!body := $body;
+        $!region = $region.lc;
+        $!service = $service.lc;
         
         # Map the lowercased and trimmed header names to trimmed header values. Will throw
         # an exception if there is an error, let caller catch it.
         %!header_map = map_headers(@headers);
-
-        $!body := $body;
 
         # Now create a URI obj from the URI string and make sure that the method and host are set.
         $!uri = URI.new(:$uri);
@@ -187,8 +195,21 @@ class WebService::AWS::V4 {
     
     # STEP 2 STRING TO SIGN
 
+    method credential_scope() returns Str:D is export {
+        my $yyyymmdd = sprintf "%d%02d%02d", $!amz_date.utc.year, $!amz_date.utc.month, $!amz_date.utc.day;
+        ($yyyymmdd,
+         $!region,
+         $!service,
+         $Termination_str).join('/');
+    }
+    
     method string_to_sign() returns Str:D is export {
-        '';
+        my $cr = self.canonical_request();
+        my $cr_sha256 = sha256_base16($cr);
+        ($HMAC_name,
+         $!amz_date.Str,
+         self.credential_scope(),
+         $cr_sha256).join("\n");
     }
 }
 
