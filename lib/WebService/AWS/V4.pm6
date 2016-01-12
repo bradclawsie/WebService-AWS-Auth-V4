@@ -25,6 +25,7 @@ https://b7j0c.org/stuff/license.txt
 unit module WebService::AWS::V4:auth<bradclawsie>:ver<0.0.1>;
 
 use Digest::SHA;
+use Digest::HMAC;
 use URI;
 use URI::Escape;
 
@@ -66,11 +67,12 @@ class WebService::AWS::V4 {
     has Str $.body is required;
     has Str $.region is required;
     has Str $.service is required;
+    has Str $.secret is required;
     has URI $!uri;
     has Str %!header_map;
     has DateTime $!amz_date;
     
-    submethod BUILD(Str:D :$method,Str:D :@headers,Str:D :$body, Str:D :$uri, Str:D :$region, Str:D :$service) {
+    submethod BUILD(Str:D :$method, :$body, :$uri, :$region, :$service, :$secret, :@headers){ 
 
         # Make sure the method passed is allowed
         unless $method (elem) $Methods {
@@ -80,6 +82,7 @@ class WebService::AWS::V4 {
 
         @!headers := @headers;
         $!body := $body;
+        $!secret := $secret;
         $!region = $region.lc;
         $!service = $service.lc;
         
@@ -217,6 +220,24 @@ class WebService::AWS::V4 {
          $!amz_date.Str,
          self.credential_scope(),
          $cr_sha256).join("\n");
+    }
+
+    # STEP 3 CALCULATE THE AWS SIGNATURE
+
+    method signing_key() returns Blob:D is export {
+        my $kdate = hmac($Auth_version ~ $!secret,amz_date_yyyymmdd($!amz_date),&sha256);
+        my $kregion = hmac($kdate,$!region,&sha256);
+        my $kservice = hmac($kregion,$!service,&sha256);
+        my $ksigning = hmac($kservice,$Termination_str,&sha256);
+        return $ksigning;
+    }
+
+    method signature() returns Str:D is export {
+        my $kdate = hmac($Auth_version ~ $!secret,amz_date_yyyymmdd($!amz_date),&sha256);
+        my $kregion = hmac($kdate,$!region,&sha256);
+        my $kservice = hmac($kregion,$!service,&sha256);
+        my $ksigning = hmac($kservice,$Termination_str,&sha256);
+        hmac-hex($ksigning,self.string_to_sign(),&sha256);
     }
 }
 
