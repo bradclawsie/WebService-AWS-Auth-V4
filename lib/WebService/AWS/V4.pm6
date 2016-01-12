@@ -136,6 +136,11 @@ class WebService::AWS::V4 {
         $dt.utc.second; 
     }
 
+    # Use this to get the yyyymmdd for a DateTime for use in various signing contexts.
+    our sub amz_date_yyyymmdd(DateTime:D $dt) returns Str:D is export {
+        sprintf "%04d%02d%02d", $dt.utc.year, $dt.utc.month, $dt.utc.day;    
+    }
+    
     our sub parse_amz_date(Str:D $s) returns DateTime:D is export {
         if $s ~~ / ^(\d ** 4)(\d ** 2)(\d ** 2)T(\d ** 2)(\d ** 2)(\d ** 2)Z$ / {
             return DateTime.new(year=>$0,
@@ -190,14 +195,13 @@ class WebService::AWS::V4 {
          self.canonical_query(),
          self.canonical_headers(),
          self.signed_headers(),
-         &sha256_base16($!body)).join("\n");
+         sha256_base16($!body)).join("\n");
     }
     
     # STEP 2 STRING TO SIGN
 
     method credential_scope() returns Str:D is export {
-        my $yyyymmdd = sprintf "%d%02d%02d", $!amz_date.utc.year, $!amz_date.utc.month, $!amz_date.utc.day;
-        ($yyyymmdd,
+        (amz_date_yyyymmdd($!amz_date),
          $!region,
          $!service,
          $Termination_str).join('/');
