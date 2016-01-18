@@ -58,7 +58,7 @@ our constant $Host_key       = 'host';
 our constant $X_Amz_Date_key = 'x-amz-date';
 
 # Termination string required in credential scope.
-our constant $Termination_str = 'aws4_request';
+our constant $AWS4_request = 'aws4_request';
 
 class WebService::AWS::V4 {
 
@@ -212,7 +212,7 @@ class WebService::AWS::V4 {
          (amz_date_yyyymmdd($!amz_date),
          $!region,
          $!service,
-         $Termination_str).join('/'),
+         $AWS4_request).join('/'),
          sha256_base16(self.canonical_request())).join("\n");
     }
 
@@ -222,8 +222,17 @@ class WebService::AWS::V4 {
         my $kdate    = hmac($Auth_version ~ $!secret,amz_date_yyyymmdd($!amz_date),&sha256);
         my $kregion  = hmac($kdate,$!region,&sha256);
         my $kservice = hmac($kregion,$!service,&sha256);
-        my $ksigning = hmac($kservice,$Termination_str,&sha256);
+        my $ksigning = hmac($kservice,$AWS4_request,&sha256);
         hmac-hex($ksigning,self.string_to_sign(),&sha256);
+    }
+
+    # STEP 4 GENERATE THE SIGNING HEADER
+
+    method signing_header() returns Str:D is export {
+        my $credential = $!access_key ~ '/' ~ amz_date_yyyymmdd($!amz_date) ~ '/' ~ $!region ~ '/' ~
+        $!service ~ '/' ~ $AWS4_request;
+        'Authorization: ' ~ $HMAC_name ~ ' Credential=' ~ $credential ~
+        ', SignedHeaders=' ~ self.signed_headers() ~ ', Signature=' ~ self.signature();
     }
 }
 
