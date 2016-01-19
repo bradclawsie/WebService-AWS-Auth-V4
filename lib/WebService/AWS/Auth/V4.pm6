@@ -4,7 +4,7 @@ use v6;
 
 =head1 NAME
 
-WebService::AWS::V4 - A Perl6 implementation of AWS v4 authentication methods.
+WebService::AWS::Auth::V4 - A Perl6 implementation of AWS v4 authentication methods.
 
 =head1 DESCRIPTION
 
@@ -29,7 +29,7 @@ The best synopsis comes from the unit test:
 
     use v6;
     use Test;
-    use WebService::AWS::V4;
+    use WebService::AWS::Auth::V4;
 
     my constant $service = 'iam';
     my constant $region = 'us-east-1';
@@ -41,11 +41,11 @@ The best synopsis comes from the unit test:
        "Content-Type:application/x-www-form-urlencoded; charset=utf-8",
        "X-Amz-Date:20150830T123600Z";
                                   
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $aws_sample_uri, headers => @aws_sample_headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
+    my $v4 = WebService::AWS::Auth::V4.new(method => $get, body => '', uri => $aws_sample_uri, headers => @aws_sample_headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 
     my $cr = $v4.canonical_request();
-    my $cr_sha256 = WebService::AWS::V4::sha256_base16($cr);
-    is WebService::AWS::V4::sha256_base16($cr), 'f536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59', 'match aws test signature for canonical request';
+    my $cr_sha256 = WebService::AWS::Auth::V4::sha256_base16($cr);
+    is WebService::AWS::Auth::V4::sha256_base16($cr), 'f536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59', 'match aws test signature for canonical request';
 
     is $v4.string_to_sign, "AWS4-HMAC-SHA256\n20150830T123600Z\n20150830/us-east-1/iam/aws4_request\nf536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59", 'string to sign';
 
@@ -65,7 +65,7 @@ https://b7j0c.org/stuff/license.txt
 
 =end pod
 
-unit module WebService::AWS::V4:auth<bradclawsie>:ver<0.0.1>;
+unit module WebService::AWS::Auth::V4:auth<bradclawsie>:ver<0.0.1>;
 
 use Digest::SHA;
 use Digest::HMAC;
@@ -74,13 +74,13 @@ use URI::Escape;
 
 # perhaps right way to do this is to just have a constructor that takes a URI, headers, and body
 
-class X::WebService::AWS::V4::ParseError is Exception is export {
+class X::WebService::AWS::Auth::V4::ParseError is Exception is export {
     has $.input;
     has $.err;
     method message() { "With $.input, parse error: $.err" }
 }
 
-class X::WebService::AWS::V4::MethodError is Exception is export {
+class X::WebService::AWS::Auth::V4::MethodError is Exception is export {
     has $.input;
     method messae() { "With $.input, missing http method. Only GET POST HEAD are supported"; }
 }
@@ -103,7 +103,7 @@ our constant $X_Amz_Date_key = 'x-amz-date';
 # Termination string required in credential scope.
 our constant $AWS4_request = 'aws4_request';
 
-class WebService::AWS::V4 {
+class WebService::AWS::Auth::V4 {
 
     has Str $.method is required;
     has Str @.headers is required;
@@ -120,7 +120,7 @@ class WebService::AWS::V4 {
 
         # Make sure the method passed is allowed
         unless $method (elem) $Methods {
-            X::WebService::AWS::V4::MethodError(input => $method).throw;
+            X::WebService::AWS::Auth::V4::MethodError(input => $method).throw;
         }
         $!method := $method;
 
@@ -138,7 +138,7 @@ class WebService::AWS::V4 {
         # Now create a URI obj from the URI string and make sure that the method and host are set.
         $!uri = URI.new(:$uri);
         unless $!uri.scheme ne '' && $!uri.host ne '' {
-            X::WebService::AWS::V4::ParseError.new(input => :$uri,err => 'cannot parse uri').throw;
+            X::WebService::AWS::Auth::V4::ParseError.new(input => :$uri,err => 'cannot parse uri').throw;
         }
 
         # If the $X_Amz_Date_key is not found, map_headers would have thrown an exception.
@@ -159,12 +159,12 @@ class WebService::AWS::V4 {
                 } 
                 %header_map{$k.lc.trim} = $v;
             } else {
-                X::WebService::AWS::V4::ParseError.new(input => $header,err => 'cannot parse header').throw;
+                X::WebService::AWS::Auth::V4::ParseError.new(input => $header,err => 'cannot parse header').throw;
             }
         }
         for $Host_key, $X_Amz_Date_key -> $k {
             unless %header_map{$k}:exists {
-                X::WebService::AWS::V4::ParseError.new(input => @headers.join("\n"),err => $k ~ ' header required').throw;
+                X::WebService::AWS::Auth::V4::ParseError.new(input => @headers.join("\n"),err => $k ~ ' header required').throw;
             }
         }
         %header_map;
@@ -202,7 +202,7 @@ class WebService::AWS::V4 {
                                 second=>$5,
                                 formatter=>&amz_date_formatter);
         } else {
-            X::WebService::AWS::V4::ParseError.new(input => $s,err => 'cannot parse X-Amz-Date').throw;
+            X::WebService::AWS::Auth::V4::ParseError.new(input => $s,err => 'cannot parse X-Amz-Date').throw;
         }
     }
 
@@ -224,7 +224,7 @@ class WebService::AWS::V4 {
                 my ($k,$v) = ($0,$1);
                 push(@escaped_pairs,uri_escape($k) ~ '=' ~ uri_escape($v));
             } else {
-                X::WebService::AWS::V4::ParseError.new(input => $pair,err => 'cannot parse query key=value').throw;
+                X::WebService::AWS::Auth::V4::ParseError.new(input => $pair,err => 'cannot parse query key=value').throw;
             }
         }
         @escaped_pairs.sort().join('&');
