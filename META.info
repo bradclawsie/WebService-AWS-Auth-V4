@@ -9,6 +9,7 @@
     },
     "depends" : [
               "URI",
+              "URI::Escape",
               "Digest::SHA",
               "Digest::HMAC"
     ],
