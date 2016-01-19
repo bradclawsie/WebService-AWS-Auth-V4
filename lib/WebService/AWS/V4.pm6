@@ -116,7 +116,7 @@ class WebService::AWS::V4 {
     has Str %!header_map;
     has DateTime $!amz_date;
     
-    submethod BUILD(Str:D :$method, :$body, :$uri, :$region, :$service, :$secret, :$access_key, :@headers){ 
+    submethod BUILD(Str:D :$method, :$body, :$uri, :$region, :$service, :$secret, :$access_key, :@headers) { 
 
         # Make sure the method passed is allowed
         unless $method (elem) $Methods {
