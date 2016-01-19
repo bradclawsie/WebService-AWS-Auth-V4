@@ -23,7 +23,7 @@ The best synopsis comes from the unit test:
 
     use v6;
     use Test;
-    use WebService::AWS::V4;
+    use WebService::AWS::Auth::V4;
 
     my constant $service = 'iam';
     my constant $region = 'us-east-1';
@@ -35,11 +35,11 @@ The best synopsis comes from the unit test:
        "Content-Type:application/x-www-form-urlencoded; charset=utf-8",
        "X-Amz-Date:20150830T123600Z";
                                   
-    my $v4 = WebService::AWS::V4.new(method => $get, body => '', uri => $aws_sample_uri, headers => @aws_sample_headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
+    my $v4 = WebService::AWS::Auth::V4.new(method => $get, body => '', uri => $aws_sample_uri, headers => @aws_sample_headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 
     my $cr = $v4.canonical_request();
-    my $cr_sha256 = WebService::AWS::V4::sha256_base16($cr);
-    is WebService::AWS::V4::sha256_base16($cr), 'f536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59', 'match aws test signature for canonical request';
+    my $cr_sha256 = WebService::AWS::Auth::V4::sha256_base16($cr);
+    is WebService::AWS::Auth::V4::sha256_base16($cr), 'f536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59', 'match aws test signature for canonical request';
 
     is $v4.string_to_sign, "AWS4-HMAC-SHA256\n20150830T123600Z\n20150830/us-east-1/iam/aws4_request\nf536975d06c0309214f805bb90ccff089219ecd68b2577efef23edd43b7e1a59", 'string to sign';
 

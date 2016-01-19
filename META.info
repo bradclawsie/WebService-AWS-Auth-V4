@@ -1,11 +1,11 @@
 {
     "perl" : "6.*",
-    "name" : "WebService::AWS::V4",
+    "name" : "WebService::AWS::Auth::V4",
     "version" : "0.0.1",
     "description" : "A library of routines to create AWS V4 authentication strings",
     "author" : "Brad Clawsie",
     "provides" : {
-        "WebService::AWS::V4" : "lib/WebService/AWS/V4.pm6"
+        "WebService::AWS::Auth::V4" : "lib/WebService/AWS/Auth/V4.pm6"
     },
     "depends" : [
               "URI",
