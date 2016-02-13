@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/bradclawsie/WebService-AWS-V4.png)](https://travis-ci.org/bradclawsie/WebService-AWS-V4)
+[![Build Status](https://travis-ci.org/bradclawsie/WebService-AWS-Auth-V4.png)](https://travis-ci.org/bradclawsie/WebService-AWS-V4)
 
 # Description
 
