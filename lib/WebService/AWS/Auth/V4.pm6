@@ -65,7 +65,7 @@ https://b7j0c.org/stuff/license.txt
 
 =end pod
 
-unit module WebService::AWS::Auth::V4:auth<bradclawsie>:ver<0.0.1>;
+unit module WebService::AWS::Auth::V4:auth<bradclawsie>:ver<0.0.2>;
 
 use Digest::SHA;
 use Digest::HMAC;
