@@ -211,7 +211,7 @@ class WebService::AWS::Auth::V4 {
     method canonical_uri() returns Str:D is export {
         my Str $path = $!uri.path;
         return '/' if $path.chars == 0 || $path eq '/';
-        uri_escape($path);
+        $path.split("/").map({uri_escape($_)}).join("/");
     }
 
     method canonical_query() returns Str:D is export {
