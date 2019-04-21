@@ -232,7 +232,7 @@ class WebService::AWS::Auth::V4 {
     method canonical-uri(--> Str:D) is export {
         my Str $path = $!uri.path;
         return '/' if $path.chars == 0 || $path eq '/';
-        $path.split("/").map({uri-escape($_)}).join("/");
+        $path
     }
 
     # Old name for canonical-uri; support old api.
