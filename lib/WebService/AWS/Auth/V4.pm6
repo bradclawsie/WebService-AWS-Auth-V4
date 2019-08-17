@@ -230,9 +230,9 @@ class WebService::AWS::Auth::V4 {
     # STEP 1 CANONICAL REQUEST
     
     method canonical-uri(--> Str:D) is export {
-        my Str $path = $!uri.path;
+        my $path = $!uri.path.Str;
         return '/' if $path.chars == 0 || $path eq '/';
-        $path.split("/").map({uri-escape($_)}).join("/");
+        $path.split("/").map({uri-escape(uri-unescape($_))}).join("/");
     }
 
     # Old name for canonical-uri; support old api.
@@ -241,7 +241,7 @@ class WebService::AWS::Auth::V4 {
     }
     
     method canonical-query(--> Str:D) is export {
-        my Str $query = $!uri.query;
+        my Str $query = $!uri.query.Str;
         return '' if $query.chars == 0;
         my Str @pairs = $query.split('&');
         my Str @escaped_pairs = ();
