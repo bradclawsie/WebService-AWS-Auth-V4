@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/bradclawsie/WebService-AWS-Auth-V4.png)](https://travis-ci.org/bradclawsie/WebService-AWS-V4)
+[![License:BSD](https://img.shields.io/badge/License-BSD-yellow.svg)](https://opensource.org/licenses/BSD-2-Clause)
+[![ci](https://github.com/bradclawsie/Net-IP-Parse/workflows/test/badge.svg)](https://github.com/bradclawsie/Webservice-AWS-Auth-V4/actions)
 
 # WebService::AWS::Auth::V4 
 
