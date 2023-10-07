@@ -19,7 +19,7 @@ http://docs.aws.amazon.com/general/latest/gr/sigv4_signing.html
 This library passes these tests. This is not a general purpose library
 for using AWS services, although v4 signing is a requirement for any
 toolkit that provides an AWS API, so this library may be useful
-as a foundation for an AWS API.                                                                     
+as a foundation for an AWS API.
 
 ## SYNOPSIS
 
@@ -36,7 +36,7 @@ as a foundation for an AWS API.
     my Str @aws_sample_headers = "Host:iam.amazonaws.com",
        "Content-Type:application/x-www-form-urlencoded; charset=utf-8",
        "X-Amz-Date:20150830T123600Z";
-                                  
+
     my $v4 = WebService::AWS::Auth::V4.new(method => $get, body => '', uri => $aws_sample_uri, headers => @aws_sample_headers, region => $region, service => $service, secret => $secret, access_key => $access_key);
 
     my $cr = $v4.canonical_request();
@@ -49,10 +49,18 @@ as a foundation for an AWS API.
 
     is $v4.signing_header(), 'Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request, SignedHeaders=content-type;host;x-amz-date, Signature=5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7', 'authorization header';
 
-## AUTHOR 
+## AUTHOR
 
-Brad Clawsie (PAUSE:bradclawsie, email:brad@b7j0c.org) 
+Brad Clawsie (zef:bradclawsie, email:brad@b7j0c.org) 
 
-## LICENSE 
+## Notice
 
-This module is licensed under the BSD license, see: https://b7j0c.org/stuff/license.txt
+This repository was uploaded via `fez` under the username `b7j0c`,
+and later `bradclawsie`. This change was made so the username would match
+Github. Sorry for any confusion.
+
+## Installation
+
+```
+zef install Webservice::AWS::Auth::V4
+```
