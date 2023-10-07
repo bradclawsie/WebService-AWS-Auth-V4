@@ -1,7 +1,7 @@
 {
     "perl" : "6.*",
     "name" : "WebService::AWS::Auth::V4",
-    "version" : "0.0.4",
+    "version" : "0.0.5",
     "description" : "A library of routines to create AWS V4 authentication strings",
     "auth" : "zef:bradclawsie",
     "author" : "Brad Clawsie",

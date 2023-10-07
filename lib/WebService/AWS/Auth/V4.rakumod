@@ -59,7 +59,7 @@ Brad Clawsie (zef:bradclawsie, email:brad@b7j0c.org)
 
 =end pod
 
-unit module WebService::AWS::Auth::V4:auth<bradclawsie>:ver<0.0.4>;
+unit module WebService::AWS::Auth::V4:auth<bradclawsie>:ver<0.0.5>;
 
 use Digest::SHA256::Native;
 use Digest::HMAC;
